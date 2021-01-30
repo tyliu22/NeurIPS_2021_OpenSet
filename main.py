@@ -21,7 +21,11 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import f1_score
 import pandas as pd
 
+import warnings
+
 from sklearn.manifold import TSNE
+
+from keras import backend as K
 from sklearn.neighbors import LocalOutlierFactor
 
 r_seed = 0
@@ -104,11 +108,10 @@ for i in range(4):
 
 # # Build Classifcation Model
 
-from keras import backend as K
+
 
 tf.random.set_seed(0)
 
-import tensorflow as tf
 
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
@@ -226,7 +229,7 @@ plt.show()
 
 # # Multi-layer Ensemble
 
-import warnings
+
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
