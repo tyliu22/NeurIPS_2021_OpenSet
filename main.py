@@ -88,14 +88,8 @@ for i in range(4):
     im = Image.fromarray(np.uint8(x_omniglot_test[i] * 255))
     display(im)
 
-# ## Noise
-
-# In[12]:
-
 
 x_noise_test = np.random.uniform(0, 1, (sample_size, 28, 28))
-
-# In[13]:
 
 
 for i in range(4):
@@ -425,29 +419,6 @@ def sample_enrichment(r_seed, target_data, sample_size):
 
     sample_coef = kernel_mean_matching(target_data, sample_enri, kern='rbf', B=50)
     return sample_enri, np.squeeze(sample_coef)
-
-
-# sample_enrichment testing
-
-# target_data = np.random.normal(15, 1, (1000, 2))
-# sample_size = 2000
-
-# sample_enri, sample_coef = sample_enrichment(1, target_data, sample_size)
-# sample_label = np.ones(sample_size)
-# sample_label[np.squeeze(sample_coef < 0.5)] = -1
-
-# plt.scatter(sample_enri[:, 0], sample_enri[:, 1])
-# plt.scatter(target_data[:, 0], target_data[:, 1])
-# plt.show()
-
-# plt.scatter(sample_enri[sample_label==-1, 0], sample_enri[sample_label==-1, 1])
-# plt.scatter(sample_enri[sample_label==1, 0], sample_enri[sample_label==1, 1])
-# plt.show()
-
-
-# # Openset Detection
-
-# In[429]:
 
 
 x_mnist_test = x_mnist_test.reshape(-1, 28, 28, 1)
