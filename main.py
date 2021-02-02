@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# test
+import tsqm
+
 '''
 Directly copy from file : mnist_playground.ipynb
 '''
