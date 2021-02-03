@@ -2,7 +2,6 @@
 # coding: utf-8
 
 # test
-import tsqm
 
 '''
 Directly copy from file : mnist_playground.ipynb
@@ -12,36 +11,30 @@ Directly copy from file : mnist_playground.ipynb
 import tensorflow as tf
 import zipfile
 from zipfile import ZipFile
-
+import warnings
 from IPython.core.display import display
 from PIL import Image
 from io import BytesIO
 import numpy as np
-
-from sklearn.ensemble import IsolationForest
 import matplotlib.pyplot as plt
-
-from sklearn.metrics import f1_score
 import pandas as pd
-
+from sklearn.metrics import f1_score
 from sklearn.manifold import TSNE
+from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
+from keras import backend as K
 
+tf.random.set_seed(0)
 r_seed = 0
 np.random.seed(r_seed)
-
-omniglot_data_path = '/home/tianyliu/Data/OpenSet_Test/omniglot/python/images_evaluation.zip'
-
+omniglot_data_path = '/home/tianyliu/Data/OpenSet/Dataset/omniglot/python/images_evaluation.zip'
 sample_size = 10000
-# print(sample_size)
 
 
 # # Preparing Data
-
 # ## MNIST and MNIST-Noise
 
 mnist = tf.keras.datasets.mnist
-
 (x_mnist_train, y_mnist_train), (x_mnist_test,
                                  y_mnist_test) = mnist.load_data()
 x_mnist_train, x_mnist_test = x_mnist_train / 255.0, x_mnist_test / 255.0
@@ -53,13 +46,14 @@ random_noise = np.random.uniform(
 x_mnist_noise_test[np.where(x_mnist_noise_test == 0)] = random_noise
 
 
-for i in range(4):
-    im = Image.fromarray(np.uint8(x_mnist_test[i] * 255))
-    display(im)
-
-for i in range(4):
-    im = Image.fromarray(np.uint8(x_mnist_noise_test[i] * 255))
-    display(im)
+# for i in range(1):
+#     im = Image.fromarray(np.uint8(x_mnist_test[i] * 255))
+#     plt.imshow(im)
+#     plt.show()
+# for i in range(1):
+#     im = Image.fromarray(np.uint8(x_mnist_noise_test[i] * 255))
+#     plt.imshow(im)
+#     plt.show()
 
 
 # ## Omniglot
@@ -82,31 +76,26 @@ def load_omniglot_eval(data_path):
 omniglot_data = load_omniglot_eval(omniglot_data_path)
 sample_idx = np.random.permutation(omniglot_data.shape[0])[:sample_size]
 x_omniglot_test = omniglot_data[sample_idx]
-print(omniglot_data.shape)
-
-# In[11]:
-
-
-for i in range(4):
-    im = Image.fromarray(np.uint8(x_omniglot_test[i] * 255))
-    display(im)
-
+print('Omniglot Dataset shape:', omniglot_data.shape)
 
 x_noise_test = np.random.uniform(0, 1, (sample_size, 28, 28))
 
 
-for i in range(4):
-    im = Image.fromarray(np.uint8(x_noise_test[i] * 255))
-    display(im)
+# for i in range(1):
+#     im = Image.fromarray(np.uint8(x_omniglot_test[i] * 255))
+#     plt.imshow(im)
+#     plt.show()
 
-# # Build Classifcation Model
+# for i in range(1):
+#     im = Image.fromarray(np.uint8(x_noise_test[i] * 255))
+#     plt.imshow(im)
+#     plt.show()
 
-from keras import backend as K
 
-tf.random.set_seed(0)
 
-import tensorflow as tf
-
+'''
+    Build Classifcation Model
+'''
 print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
 
@@ -123,7 +112,7 @@ basic_model = tf.keras.models.Sequential([
     tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
     tf.keras.layers.Flatten(),
     tf.keras.layers.Dense(500),
-    tf.keras.layers.Dense(4),  # layer -3
+    tf.keras.layers.Dense(100),  # layer -3
     tf.keras.layers.Dense(10),  # layer -2
     tf.keras.layers.Activation(activation='softmax')  # layer -1
 ])
@@ -134,7 +123,7 @@ basic_model.compile(optimizer='adam',
 
 # set layer output as a second Model
 model_l2 = tf.keras.models.Model(inputs=basic_model.layers[0].input,
-                                 outputs=basic_model.layers[-2].output)
+                                 outputs=basic_model.layers[-2 ].output)
 
 # set layer output as a second Model
 model_l3 = tf.keras.models.Model(inputs=basic_model.layers[0].input,
@@ -156,10 +145,10 @@ x_omniglot_test = x_omniglot_test.reshape(-1, 28, 28, 1)
 x_mnist_noise_test = x_mnist_noise_test.reshape(-1, 28, 28, 1)
 x_noise_test = x_noise_test.reshape(-1, 28, 28, 1)
 
-result_mnist_test = model.predict(x_mnist_test[:sample_size])
-result_omniglot_test = model.predict(x_omniglot_test)
-result_mnist_noise_test = model.predict(x_mnist_noise_test[:sample_size])
-result_noise_test = model.predict(x_noise_test)
+result_mnist_test = model_l2.predict(x_mnist_test[:sample_size])
+result_omniglot_test = model_l2.predict(x_omniglot_test)
+result_mnist_noise_test = model_l2.predict(x_mnist_noise_test[:sample_size])
+result_noise_test = model_l2.predict(x_noise_test)
 
 result_mnist_test_base = basic_model.predict(x_mnist_test[:sample_size])
 result_omniglot_test_base = basic_model.predict(x_omniglot_test)
@@ -177,59 +166,51 @@ result_noise_test_mlayer = np.hstack(
     [result_noise_test, result_noise_test_base])
 
 fig, ax = plt.subplots(nrows=2, ncols=5)
-
 counter = 0
 for row in ax:
     for col in row:
-        col.hist(result_mnist_test_base[:, counter])
+        col.hist(result_mnist_test_base[:, counter], facecolor='g')
         col.hist(result_omniglot_test_base[:, counter])
         counter += 1
 plt.show()
 
-
+#
 fig, ax = plt.subplots(nrows=2, ncols=5)
-
 counter = 0
 for row in ax:
     for col in row:
-        col.hist(result_mnist_test[:, counter])
+        col.hist(result_mnist_test[:, counter], facecolor='g')
         col.hist(result_omniglot_test[:, counter])
         counter += 1
 plt.show()
 
 
 fig, ax = plt.subplots(nrows=2, ncols=5)
-
 counter = 0
 for row in ax:
     for col in row:
-        col.hist(result_mnist_test[:, counter])
+        col.hist(result_mnist_test[:, counter], facecolor='g')
         col.hist(result_mnist_noise_test[:, counter])
         counter += 1
 plt.show()
 
-# In[20]:
-
 
 fig, ax = plt.subplots(nrows=2, ncols=5)
-
 counter = 0
 for row in ax:
     for col in row:
-        col.hist(result_mnist_test[:, counter])
+        col.hist(result_mnist_test[:, counter], facecolor='g')
         col.hist(result_noise_test[:, counter])
         counter += 1
 plt.show()
 
+
 # # Multi-layer Ensemble
-
-import warnings
-
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
+# warnings.filterwarnings("ignore", category=DeprecationWarning)
+# warnings.filterwarnings("ignore", category=FutureWarning)
 
 
-result_mnist_train = model.predict(x_mnist_train)
+result_mnist_train = model_l2.predict(x_mnist_train)
 result_mnist_train_base = basic_model.predict(x_mnist_train)
 
 
@@ -292,7 +273,6 @@ playground_result['noise'] = [noise_f1]
 
 playground_result
 
-# In[23]:
 
 
 outlier_detector_l1 = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000)
@@ -352,12 +332,6 @@ playground_result['noise'] = [noise_f1]
 playground_result
 
 # # Openset Sample Enrichment
-
-# In[13]:
-
-
-import os
-import sys
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -438,15 +412,15 @@ noise_l3_r = model_l3.predict(x_noise_test)
 
 idx1 = 1
 idx2 = 2
-plt.scatter(mniTr_l3_r[:5000, idx1], mniTr_l3_r[:5000, idx2])
-plt.scatter(omnig_l3_r[:5000, idx1], omnig_l3_r[:5000, idx2])
-plt.scatter(noise_l3_r[:5000, idx1], noise_l3_r[:5000, idx2])
+plt.scatter(mniTr_l3_r[:5000, idx1], mniTr_l3_r[:5000, idx2], c='b')
+plt.scatter(omnig_l3_r[:5000, idx1], omnig_l3_r[:5000, idx2], c='y')
+plt.scatter(noise_l3_r[:5000, idx1], noise_l3_r[:5000, idx2], c='g')
 plt.ylim([-50, 60])
 plt.xlim([-50, 60])
 plt.show()
 
 plt.scatter(mniTe_l3_r[:5000, idx1], mniTe_l3_r[:5000, idx2])
-plt.ylim([-50, 60])
+plt.ylim([-50, 60]
 plt.xlim([-50, 60])
 plt.show()
 
@@ -787,16 +761,13 @@ y_test_pred = detetor.predict(noise_l3_r)
 y_test_pred = y_test_pred.argmax(axis=1)
 (y_test_pred == 10).sum() / 12000
 
-# In[ ]:
 
 
-# In[ ]:
 
-
-result_mnist_test = model.predict(x_mnist_test[:sample_size])
-result_omniglot_test = model.predict(x_omniglot_test)
-result_mnist_noise_test = model.predict(x_mnist_noise_test[:sample_size])
-result_noise_test = model.predict(x_noise_test)
+result_mnist_test = model_l2.predict(x_mnist_test[:sample_size])
+result_omniglot_test = model_l2.predict(x_omniglot_test)
+result_mnist_noise_test = model_l2.predict(x_mnist_noise_test[:sample_size])
+result_noise_test = model_l2.predict(x_noise_test)
 
 result_mnist_test_base = basic_model.predict(x_mnist_test[:sample_size])
 result_omniglot_test_base = basic_model.predict(x_omniglot_test)
@@ -805,15 +776,8 @@ result_mnist_noise_test_base = basic_model.predict(
 result_noise_test_base = basic_model.predict(x_noise_test)
 
 
-# In[ ]:
-
-
-# In[ ]:
-
 
 # # Play Ground
-
-# In[73]:
 
 
 # def auxiliary_risk(x_t, y_t, k, model):
@@ -943,32 +907,10 @@ model = my_model()
 my_dataset = get_fake_dataset()
 model.fit(my_dataset)
 
-# In[ ]:
-
-
-# In[ ]:
-
-
-# In[ ]:
-
-
-# In[ ]:
-
-
-# In[ ]:
-
 
 result_mnist_train_subset = result_mnist_train[:5000]
 pred_label = result_mnist_train.argmax(axis=1)[:5000]
 X_embedded = TSNE(n_components=2).fit_transform(result_mnist_train_subset)
-
-# In[422]:
-
-
-# In[423]:
-
-
-# In[413]:
 
 
 idx1 = 1
@@ -1029,7 +971,6 @@ plt.xlim([-80, 70])
 plt.ylim([-70, 80])
 plt.show()
 
-# In[279]:
 
 
 plt.scatter(temp_enri[:, 0], temp_enri[:, 1])
@@ -1101,13 +1042,6 @@ plt.show()
 
 from sklearn.manifold import TSNE
 
-# In[ ]:
-
-
-# In[ ]:
-
-
-# In[168]:
 
 
 X_embedded2 = TSNE(n_components=2).fit_transform(
@@ -1134,29 +1068,27 @@ plt.show()
 
 X_embedded = TSNE(n_components=2).fit_transform(np.vstack([result_mnist_train, sample_enri]))
 
-# In[129]:
 
 
 plt.scatter(X_embedded[:2000, 0], X_embedded[:2000, 1])
 plt.scatter(X_embedded[10000:12000, 0], X_embedded[10000:12000, 1])
 plt.show()
 
-# In[105]:
+
 
 
 sample_enri
 
-# In[103]:
+
 
 
 sample_enri.shape
 
-# In[102]:
 
 
 np.unique(sample_coef)
 
-# In[100]:
+
 
 
 plt.hist(sample_coef)
@@ -1176,22 +1108,13 @@ outlier_detector_sampled = GradientBoostingClassifier(n_estimators=500,
                                                       random_state=0)
 outlier_detector_sampled.fit(sample_enri, sample_label)
 
-# In[371]:
-
 
 outlier_pred_result = outlier_detector_sampled.predict(result_merge_TSNE_embedded[:5000])
 (outlier_pred_result == -1).sum()
 
-# In[372]:
-
 
 outlier_pred_result = outlier_detector_sampled.predict(result_merge_TSNE_embedded[5000:])
 (outlier_pred_result == -1).sum()
-
-# In[ ]:
-
-
-# In[334]:
 
 
 mnist_max = result_mnist_test.max(axis=0)
@@ -1214,27 +1137,20 @@ sample_dim = mnist_max.shape[0]
 uniform_sample_set = np.random.random(size=(sample_size, sample_dim))
 uniform_sample_set
 
-# In[287]:
-
 
 mnist_gap = mnist_max * 2 - mnist_min * 2
 for dim_idx in range(sample_dim):
     uniform_sample_set[:, dim_idx] = uniform_sample_set[:, dim_idx] * mnist_gap[dim_idx] - mnist_gap[dim_idx] / 2
 uniform_sample_set
 
-# In[288]:
-
 
 coef = kernel_mean_matching(result_mnist_TSNE_embedded, uniform_sample_set, kern='rbf', B=10)
-
-# In[330]:
 
 
 uniform_label = np.ones(sample_size)
 uniform_label[np.squeeze(coef < 0.8)] = -1
 (uniform_label == -1).sum() / sample_size
 
-# In[331]:
 
 
 from sklearn.ensemble import GradientBoostingClassifier
