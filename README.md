@@ -9,4 +9,4 @@ One can download five out-of-distributin datasets from:
 * **[LSUN (resize)](https://www.dropbox.com/s/moqh2wh8696c3yl/LSUN_resize.tar.gz)**
 * **[iSUN](https://www.dropbox.com/s/ssz7qxfqae0cca5/iSUN.tar.gz)**
 
-when running this algorithms, please put those data into corresponding folders in advance.
+when running this algorithms, please put those data into corresponding folders in advance, e.g. .\Dataset\Imagenet_crop.
