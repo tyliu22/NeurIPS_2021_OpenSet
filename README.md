@@ -16,4 +16,4 @@ One can download training models for CIFAR10 from:
 
 * **[DLA](https://github.com/kuangliu/pytorch-cifar)**
 
-which can achieve 95% accuracy on CIFAR10 dataset. 
+which can achieve 95% accuracy on CIFAR10 dataset. For convenience, we have provided those models on **.\models\dla.py**, and the trainied model parameters are saved in **.\checkpoint\ckpt.pth**.
