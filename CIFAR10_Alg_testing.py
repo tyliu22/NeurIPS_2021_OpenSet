@@ -166,7 +166,6 @@ with torch.no_grad():
         = net(x_LSUN_crop_test.to(device))
 
 
-
 # **************** outlier detector training **************** #
 print('outlier detector training')
 sample_size = 10000
@@ -256,6 +255,69 @@ print('outlier_cifar10_train detection rate:', (outlier_cifar10_train == -1).sum
 print('outlier_cifar10_test detection rate:', (outlier_cifar10_test == -1).sum() / outlier_cifar10_test.shape[0])
 print('outlier_Imagenet_crop detection rate:', (outlier_Imagenet_crop == -1).sum() / outlier_Imagenet_crop.shape[0])
 print('outlier_LSUN_crop detection rate:', (outlier_LSUN_crop == -1).sum() / outlier_LSUN_crop.shape[0])
+
+
+
+
+
+def OutlierDetection(train_data_last_layer, train_data_hidden,
+                     test_data_last_layer, test_data_hidden,
+                     *outlier_data):
+    """
+    The Outlier Detection Function
+    =======================
+    Input: (train_data, test_data, outlier_data)
+        train_data   [tensor]: embeded training dataset
+        test_data    [tensor]: embeded testing dataset
+        outlier_data [tensor]: embeded outlier datasets
+    data type:
+
+    """
+
+    num_of_datasets = len(outlier_data)
+    # if num_of_para < 2:
+    #     raise NameError('Input parameters less than 2, cannot calculate the detection rate')
+    # build outlier detection model
+    outlier_detector_last_layer = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
+                                                  contamination=0.02)
+    outlier_detector_hidden = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
+                                              contamination=0.02)
+
+    train_data_last_layer = train_data_last_layer.cpu().numpy()
+    train_data_hidden = train_data_hidden.cpu().numpy()
+
+    # data argument
+    outlier_detector_last_layer.fit(train_data_last_layer)
+    outlier_detector_hidden.fit(train_data_hidden)
+
+    # outlier predict
+    outlier_train_hidden = outlier_detector_hidden.predict(train_data_hidden)
+    outlier_train_last_layer = outlier_detector_last_layer.predict(train_data_last_layer)
+    outlier_train = outlier_train_last_layer + outlier_train_hidden
+
+    # **************** Tensor2numpy **************** #
+    test_data_last_layer = test_data_last_layer.cpu().numpy()
+    test_data_hidden = test_data_hidden.cpu().numpy()
+
+    outlier_test_hidden = outlier_detector_hidden.predict(test_data_hidden)
+    outlier_test_last_layer = outlier_detector_last_layer.predict(test_data_last_layer)
+    outlier_test = outlier_test_last_layer + outlier_test_hidden
+
+    # **************** outlier predict **************** #
+    print('outlier predict')
+
+    # **************** outlier predict final **************** #
+    outlier_train[outlier_train <= 1] = -1
+    outlier_train[outlier_train > 1] = 0
+    outlier_train[outlier_train == 0] = \
+        outlier_train_last_layer.argmax(axis=1)[outlier_train == 0]
+
+    outlier_test[outlier_cifar10_test <= 1] = -1
+    outlier_test[outlier_cifar10_test > 1] = 0
+    outlier_test[outlier_cifar10_test == 0] = \
+        outlier_test_last_layer.argmax(axis=1)[outlier_test == 0]
+
+
 
 
 
