@@ -11,15 +11,12 @@ from io import BytesIO
 import zipfile
 
 import numpy as np
-from sklearn.metrics import f1_score
-from sklearn.ensemble import IsolationForest
 
-# from models import *
-from models.dla_20_10 import DLA_20_10
+from models import *
+from OutlierDetection import OutlierDetection
 
 r_seed = 0
 np.random.seed(r_seed)
-# torch.random.seed(r_seed)
 
 # ******************************************************************* #
 #                       Para Setting
@@ -68,8 +65,7 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer',
 
 # Model
 print('==> Building model..')
-# net = DLA()
-net = DLA_20_10()
+net = DLA()
 
 net = net.to(device)
 if device == 'cuda':
@@ -80,7 +76,7 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/DLA_para/ckpt_20_10.pth')
+    checkpoint = torch.load('./checkpoint/ckpt.pth')
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
@@ -131,209 +127,88 @@ Imagenet_crop_data_path = '/home/tianyliu/Data/OpenSet/Dataset/Image/Imagenet_cr
 Imagenet_crop_data = load_image_eval(Imagenet_crop_data_path)
 x_Imagenet_crop_test = Imagenet_crop_data
 
+# LOAD DATA: Imagenet_resize
+Imagenet_resize_data_path = '/home/tianyliu/Data/OpenSet/Dataset/Image/Imagenet_resize.zip'
+Imagenet_resize_data = load_image_eval(Imagenet_resize_data_path)
+# sample_idx = np.random.permutation(Imagenet_resize_data.shape[0])[:sample_size]
+x_Imagenet_resize_test = Imagenet_resize_data
+
+
 # LOAD DATA: LSUN_crop
 LSUN_crop_data_path = '/home/tianyliu/Data/OpenSet/Dataset/Image/LSUN_crop.zip'
 LSUN_crop_data = load_image_eval(LSUN_crop_data_path)
 x_LSUN_crop_test = LSUN_crop_data
 
+# LOAD DATA: LSUN_resize
+LSUN_resize_data_path = '/home/tianyliu/Data/OpenSet/Dataset/Image/LSUN_resize.zip'
+LSUN_resize_data = load_image_eval(LSUN_resize_data_path)
+x_LSUN_resize_test = LSUN_resize_data
+
+
+
 # numpy To tensor  [10000, 3, 32, 32]
 x_Imagenet_crop_test = torch.from_numpy(x_Imagenet_crop_test).permute(0, 3, 1, 2)
+x_Imagenet_resize_test = torch.from_numpy(x_Imagenet_resize_test).permute(0, 3, 1, 2)
 x_LSUN_crop_test = torch.from_numpy(x_LSUN_crop_test).permute(0, 3, 1, 2)
+x_LSUN_resize_test = torch.from_numpy(x_LSUN_resize_test).permute(0, 3, 1, 2)
 
 # Double Tensor 2 Float Tensor
 x_Imagenet_crop_test = x_Imagenet_crop_test.type(torch.FloatTensor)
+x_Imagenet_resize_test = x_Imagenet_resize_test.type(torch.FloatTensor)
 x_LSUN_crop_test = x_LSUN_crop_test.type(torch.FloatTensor)
+x_LSUN_resize_test = x_LSUN_resize_test.type(torch.FloatTensor)
+
+
+# Double Tensor 2 Float Tensor
+x_Imagenet_crop_test = x_Imagenet_crop_test.type(torch.FloatTensor)
+x_Imagenet_resize_test = x_Imagenet_resize_test.type(torch.FloatTensor)
+x_LSUN_crop_test = x_LSUN_crop_test.type(torch.FloatTensor)
+x_LSUN_resize_test = x_LSUN_resize_test.type(torch.FloatTensor)
 
 
 
 print('x_cifar10_train Dataset shape:', x_cifar10_train.shape)
 print('x_cifar10_test Dataset shape:', x_cifar10_test.shape)
 print('Imagenet_crop Dataset shape:', x_Imagenet_crop_test.shape)
+print('Imagenet_resize Dataset shape:', x_Imagenet_resize_test.shape)
 print('LSUN_crop Dataset shape:', x_LSUN_crop_test.shape)
-
+print('LSUN_resize Dataset shape:', x_LSUN_resize_test.shape)
 
 
 with torch.no_grad():
-    result_cifar10_train_base, result_cifar10_train_hidden, result_cifar10_train\
+    result_cifar10_train_last_layer, result_cifar10_train_hidden\
         = net(x_cifar10_train.to(device))
-    result_cifar10_test_base, result_cifar10_test_hidden, result_cifar10_test\
+    result_cifar10_test_last_layer, result_cifar10_test_hidden\
         = net(x_cifar10_test.to(device))
 
 with torch.no_grad():
-    result_Imagenet_crop_test_base, result_Imagenet_crop_test_hidden, result_Imagenet_crop_test\
+    result_Imagenet_crop_test_last_layer, result_Imagenet_crop_hidden\
         = net(x_Imagenet_crop_test.to(device))
-    result_LSUN_crop_test_base, result_LSUN_crop_test_hidden, result_LSUN_crop_test\
+    result_Imagenet_resize_test_last_layer, result_Imagenet_resize_hidden \
+        = net(x_Imagenet_resize_test.to(device))
+    result_LSUN_crop_test_last_layer, result_LSUN_crop_hidden\
         = net(x_LSUN_crop_test.to(device))
+    result_LSUN_resize_test_last_layer, result_LSUN_resize_hidden\
+        = net(x_LSUN_resize_test.to(device))
 
 
-# **************** outlier detector training **************** #
-print('outlier detector training')
-sample_size = 10000
-outlier_detector_l1 = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
-                                      contamination=0.02)
-outlier_detector_l_hidden = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
-                                            contamination=0.02)
-outlier_detector_l2 = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
-                                      contamination=0.02)
+# OutlierDetection(train_data_last_layer, train_data_hidden,
+#                  test_data_last_layer, test_data_hidden, test_data_label,
+#                  outlier_datasets_name, outlier_datasets,
+#                  sample_size=10000, r_seed=0, n_estimators=1000, verbose=0,
+#                  max_samples=10000, contamination=0.02)
 
-result_cifar10_train = result_cifar10_train.cpu().numpy()
-result_cifar10_train_hidden = result_cifar10_train_hidden.cpu().numpy()
-result_cifar10_train_base = result_cifar10_train_base.cpu().numpy()
-# data argument
-outlier_detector_l1.fit(result_cifar10_train)
-outlier_detector_l_hidden.fit(result_cifar10_train_hidden)
-outlier_detector_l2.fit(result_cifar10_train_base)
+abnormal_datasets_name = ['Imagenet crop', 'Imagenet resize', 'LSUN crop', 'LSUN resize']
+abnormal_datasets = [result_Imagenet_crop_test_last_layer, result_Imagenet_crop_hidden,
+                     result_Imagenet_resize_test_last_layer, result_Imagenet_resize_hidden,
+                     result_LSUN_crop_test_last_layer, result_LSUN_crop_hidden,
+                     result_LSUN_resize_test_last_layer, result_LSUN_resize_hidden
+                     ]
 
-
-
-# **************** Tensor2numpy **************** #
-result_cifar10_test = result_cifar10_test.cpu().numpy()
-result_cifar10_test_hidden = result_cifar10_test_hidden.cpu().numpy()
-result_cifar10_test_base = result_cifar10_test_base.cpu().numpy()
-
-result_Imagenet_crop_test = result_Imagenet_crop_test.cpu().numpy()
-result_Imagenet_crop_test_hidden = result_Imagenet_crop_test_hidden.cpu().numpy()
-result_Imagenet_crop_test_base = result_Imagenet_crop_test_base.cpu().numpy()
-
-result_LSUN_crop_test = result_LSUN_crop_test.cpu().numpy()
-result_LSUN_crop_test_hidden = result_LSUN_crop_test_hidden.cpu().numpy()
-result_LSUN_crop_test_base = result_LSUN_crop_test_base.cpu().numpy()
+OutlierDetection(result_cifar10_train_last_layer, result_cifar10_train_hidden,
+                 result_cifar10_test_last_layer, result_cifar10_test_hidden, x_cifar10_test_label,
+                 abnormal_datasets_name, abnormal_datasets,
+                 sample_size=10000, r_seed=0, n_estimators=1000, verbose=0,
+                 max_samples=10000, contamination=0.01)
 
 
-
-# **************** outlier predict **************** #
-print('outlier predict')
-outlier_cifar10_train_l1 = outlier_detector_l1.predict(result_cifar10_train)
-outlier_cifar10_train_l_hidden = outlier_detector_l_hidden.predict(result_cifar10_train_hidden)
-outlier_cifar10_train_l2 = outlier_detector_l2.predict(result_cifar10_train_base)
-outlier_cifar10_train = outlier_cifar10_train_l1 + outlier_cifar10_train_l_hidden + outlier_cifar10_train_l2
-
-outlier_cifar10_test_l1 = outlier_detector_l1.predict(result_cifar10_test)
-outlier_cifar10_test_l_hidden = outlier_detector_l_hidden.predict(result_cifar10_test_hidden)
-outlier_cifar10_test_l2 = outlier_detector_l2.predict(result_cifar10_test_base)
-outlier_cifar10_test = outlier_cifar10_test_l1 + outlier_cifar10_test_l_hidden + outlier_cifar10_test_l2
-
-outlier_Imagenet_crop_l1 = outlier_detector_l1.predict(result_Imagenet_crop_test)
-outlier_Imagenet_crop_l_hidden = outlier_detector_l_hidden.predict(result_Imagenet_crop_test_hidden)
-outlier_Imagenet_crop_l2 = outlier_detector_l2.predict(result_Imagenet_crop_test_base)
-outlier_Imagenet_crop = outlier_Imagenet_crop_l1 + outlier_Imagenet_crop_l_hidden + outlier_Imagenet_crop_l2
-
-outlier_LSUN_crop_l1 = outlier_detector_l1.predict(result_LSUN_crop_test)
-outlier_LSUN_crop_l_hidden = outlier_detector_l_hidden.predict(result_LSUN_crop_test_hidden)
-outlier_LSUN_crop_l2 = outlier_detector_l2.predict(result_LSUN_crop_test_base)
-outlier_LSUN_crop = outlier_LSUN_crop_l1 + outlier_LSUN_crop_l_hidden + outlier_LSUN_crop_l2
-
-# np.sum(outlier_cifar10_test_l_hidden == 1)
-
-
-
-# **************** outlier predict final **************** #
-outlier_cifar10_train[outlier_cifar10_train <= 1] = -1
-outlier_cifar10_train[outlier_cifar10_train > 1] = 0
-outlier_cifar10_train[outlier_cifar10_train == 0] = \
-    result_cifar10_train_base.argmax(axis=1)[outlier_cifar10_train == 0]
-
-outlier_cifar10_test[outlier_cifar10_test <= 1] = -1
-outlier_cifar10_test[outlier_cifar10_test > 1] = 0
-outlier_cifar10_test[outlier_cifar10_test == 0] = \
-    result_cifar10_test_base.argmax(axis=1)[outlier_cifar10_test == 0]
-
-outlier_Imagenet_crop[outlier_Imagenet_crop <= 1] = -1
-outlier_Imagenet_crop[outlier_Imagenet_crop > 1] = 0
-outlier_Imagenet_crop[outlier_Imagenet_crop == 0] = \
-    result_Imagenet_crop_test_base.argmax(axis=1)[outlier_Imagenet_crop == 0]
-
-outlier_LSUN_crop[outlier_LSUN_crop <= 1] = -1
-outlier_LSUN_crop[outlier_LSUN_crop > 1] = 0
-outlier_LSUN_crop[outlier_LSUN_crop == 0] = \
-    result_LSUN_crop_test_base.argmax(axis=1)[outlier_LSUN_crop == 0]
-
-
-
-# **************** Print predict result **************** #
-print('outlier_cifar10_train detection rate:', (outlier_cifar10_train == -1).sum() / outlier_cifar10_train.shape[0])
-print('outlier_cifar10_test detection rate:', (outlier_cifar10_test == -1).sum() / outlier_cifar10_test.shape[0])
-print('outlier_Imagenet_crop detection rate:', (outlier_Imagenet_crop == -1).sum() / outlier_Imagenet_crop.shape[0])
-print('outlier_LSUN_crop detection rate:', (outlier_LSUN_crop == -1).sum() / outlier_LSUN_crop.shape[0])
-
-
-
-
-
-def OutlierDetection(train_data_last_layer, train_data_hidden,
-                     test_data_last_layer, test_data_hidden,
-                     *outlier_data):
-    """
-    The Outlier Detection Function
-    =======================
-    Input: (train_data, test_data, outlier_data)
-        train_data   [tensor]: embeded training dataset
-        test_data    [tensor]: embeded testing dataset
-        outlier_data [tensor]: embeded outlier datasets
-    data type:
-
-    """
-
-    num_of_datasets = len(outlier_data)
-    # if num_of_para < 2:
-    #     raise NameError('Input parameters less than 2, cannot calculate the detection rate')
-    # build outlier detection model
-    outlier_detector_last_layer = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
-                                                  contamination=0.02)
-    outlier_detector_hidden = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
-                                              contamination=0.02)
-
-    train_data_last_layer = train_data_last_layer.cpu().numpy()
-    train_data_hidden = train_data_hidden.cpu().numpy()
-
-    # data argument
-    outlier_detector_last_layer.fit(train_data_last_layer)
-    outlier_detector_hidden.fit(train_data_hidden)
-
-    # outlier predict
-    outlier_train_hidden = outlier_detector_hidden.predict(train_data_hidden)
-    outlier_train_last_layer = outlier_detector_last_layer.predict(train_data_last_layer)
-    outlier_train = outlier_train_last_layer + outlier_train_hidden
-
-    # **************** Tensor2numpy **************** #
-    test_data_last_layer = test_data_last_layer.cpu().numpy()
-    test_data_hidden = test_data_hidden.cpu().numpy()
-
-    outlier_test_hidden = outlier_detector_hidden.predict(test_data_hidden)
-    outlier_test_last_layer = outlier_detector_last_layer.predict(test_data_last_layer)
-    outlier_test = outlier_test_last_layer + outlier_test_hidden
-
-    # **************** outlier predict **************** #
-    print('outlier predict')
-
-    # **************** outlier predict final **************** #
-    outlier_train[outlier_train <= 1] = -1
-    outlier_train[outlier_train > 1] = 0
-    outlier_train[outlier_train == 0] = \
-        outlier_train_last_layer.argmax(axis=1)[outlier_train == 0]
-
-    outlier_test[outlier_cifar10_test <= 1] = -1
-    outlier_test[outlier_cifar10_test > 1] = 0
-    outlier_test[outlier_cifar10_test == 0] = \
-        outlier_test_last_layer.argmax(axis=1)[outlier_test == 0]
-
-
-
-
-
-# **************** F1 Score result **************** #
-base_pred = result_cifar10_test_base.argmax(axis=1)
-base_pred[outlier_cifar10_test == -1] = -1
-
-# total 20000 samples: 10000 cifar10, 10000 other samples
-true_label = np.zeros(sample_size * 2)
-true_label = true_label - 1
-true_label[:sample_size] = x_cifar10_test_label
-
-Imagenet_crop_f1 = f1_score(true_label, np.concatenate([base_pred, outlier_Imagenet_crop]), average='macro')
-LSUN_crop_f1 = f1_score(true_label, np.concatenate([base_pred, outlier_LSUN_crop]), average='macro')
-
-print('Imagenet_crop detection f1 score:', Imagenet_crop_f1)
-print('LSUN_crop detection f1 score:', LSUN_crop_f1)
-
-print('End')

@@ -258,7 +258,13 @@ playground_result['omniglot'] = [omniglot_f1]
 playground_result['mnist_noise'] = [mnist_noise_f1]
 playground_result['noise'] = [noise_f1]
 
-playground_result
+
+print('detector:IsolationForest')
+print('omniglot detection  f1 score:', omniglot_f1)
+print('mnist_noise detection f1 score:', mnist_noise_f1)
+print('noise detection f1 score:', noise_f1)
+
+print('End')
 
 
 
