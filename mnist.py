@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import f1_score
 from sklearn.ensemble import IsolationForest
+from sklearn.manifold import TSNE
 from keras import backend as K
 
 tf.random.set_seed(0)
@@ -45,11 +46,6 @@ x_mnist_noise_test[np.where(x_mnist_noise_test == 0)] = random_noise
 #     im = Image.fromarray(np.uint8(x_mnist_test[i] * 255))
 #     plt.imshow(im)
 #     plt.show()
-# for i in range(1):
-#     im = Image.fromarray(np.uint8(x_mnist_noise_test[i] * 255))
-#     plt.imshow(im)
-#     plt.show()
-
 
 # ## Omniglot
 
@@ -268,6 +264,30 @@ print('End')
 
 
 
+
+
+def plot_tsne(features, labels, save_eps=False):
+        ''' Plot TSNE figure. Set save_eps=True if you want to save a .eps file.
+        '''
+        tsne = TSNE(n_components=2, init='pca', random_state=0)
+        features_tsne = tsne.fit_transform(features)
+        x_min, x_max = np.min(features_tsne, 0), np.max(features_tsne, 0)
+        features_norm = (features_tsne - x_min) / (x_max - x_min)
+        for i in range(features_norm.shape[0]):
+            plt.text(features_norm[i, 0], features_norm[i, 1], str(labels[i]),
+                     color=plt.cm.Set1(labels[i] / 10.),
+                     fontdict={'weight': 'bold', 'size': 9})
+        plt.xticks([])
+        plt.yticks([])
+        plt.title('T-SNE')
+        if save_eps:
+            plt.savefig('tsne.eps', dpi=600, format='eps')
+        plt.show()
+
+
+plot_tsne(result_mnist_train_base, x_mnist_train_label.cpu().numpy())
+
+plot_tsne(result_mnist_test_base, x_mnist_test_label.cpu().numpy())
 
 
 

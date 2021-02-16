@@ -38,12 +38,12 @@ def OutlierDetection(train_data_last_layer, train_data_hidden,
     train_data_last_layer = train_data_last_layer.cpu().numpy()
     train_data_hidden = train_data_hidden.cpu().numpy()
 
-    print('===>outlier detector:training')
+    print('===> outlier detector:training')
     # data argument
     outlier_detector_last_layer.fit(train_data_last_layer)
     outlier_detector_hidden.fit(train_data_hidden)
 
-    print('==>outlier dataset prediction')
+    print('===> outlier dataset prediction')
     # outlier predict
     outlier_train_hidden = outlier_detector_hidden.predict(train_data_hidden)
     outlier_train_last_layer = outlier_detector_last_layer.predict(train_data_last_layer)
@@ -78,21 +78,14 @@ def OutlierDetection(train_data_last_layer, train_data_hidden,
     num_of_datasets = len(abnormal_datasets_name)
     for i in range(num_of_datasets):
         # **************** Tensor2numpy **************** #
-        # test_data_last_layer = test_data_last_layer.cpu().numpy()
-        # test_data_hidden = test_data_hidden.cpu().numpy()
         abnormal_datasets_last_layer = abnormal_datasets[2*i].cpu().numpy()
         abnormal_datasets_hidden = abnormal_datasets[2*i+1].cpu().numpy()
 
 
-        # outlier_test_last_layer = outlier_detector_last_layer.predict(test_data_last_layer)
-        # outlier_test_hidden = outlier_detector_hidden.predict(test_data_hidden)
-        # outlier_test = outlier_test_last_layer + outlier_test_hidden
         outlier_datasets_last_layer = outlier_detector_last_layer.predict(abnormal_datasets_last_layer)
         outlier_datasets_hidden = outlier_detector_hidden.predict(abnormal_datasets_hidden)
         outlier_datasets_sum = outlier_datasets_last_layer + outlier_datasets_hidden
 
-        # **************** outlier predict **************** #
-        # print('outlier predict')
 
         # **************** outlier predict final **************** #
         outlier_datasets_sum[outlier_datasets_sum <= 1] = -1

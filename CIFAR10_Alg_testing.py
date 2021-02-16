@@ -180,8 +180,6 @@ with torch.no_grad():
         = net(x_cifar10_train.to(device))
     result_cifar10_test_last_layer, result_cifar10_test_hidden\
         = net(x_cifar10_test.to(device))
-
-with torch.no_grad():
     result_Imagenet_crop_test_last_layer, result_Imagenet_crop_hidden\
         = net(x_Imagenet_crop_test.to(device))
     result_Imagenet_resize_test_last_layer, result_Imagenet_resize_hidden \
