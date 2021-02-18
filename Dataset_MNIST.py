@@ -50,19 +50,23 @@ for i in selected_class:
                                              train_dataset_data[np.where(train_dataset_label==i)], axis=0)
     selected_train_dataset_label = np.append(selected_train_dataset_label,
                                              train_dataset_label[np.where(train_dataset_label==i)])
+num_class = int(10)
+for i in selected_class:
+    selected_train_dataset_label[np.where(selected_train_dataset_label==i)] = num_class
+    num_class=num_class+1
+selected_train_dataset_label = (selected_train_dataset_label - 10).astype(int)
 
-
-unselected_train_dataset_label = np.empty(shape=[0,0])
+unselected_train_dataset_label = np.empty(shape=[0])
 unselected_train_dataset_data = np.empty(shape=[0,28,28])
 for i in unselected_class:
     unselected_train_dataset_data = np.append(unselected_train_dataset_data,
                                              train_dataset_data[np.where(train_dataset_label==i)], axis=0)
-    unselected_train_dataset_label = np.append(unselected_train_dataset_label,
-                                             train_dataset_label[np.where(train_dataset_label==i)])
+    # unselected_train_dataset_label = np.append(unselected_train_dataset_label,
+    #                                          train_dataset_label[np.where(train_dataset_label==i)])
 
 
 mnist_train_data, mnist_train_label = selected_train_dataset_data[:, np.newaxis,:,:],\
-                                      np.array(selected_train_dataset_label, dtype=float)
+                                      selected_train_dataset_label
 mnist_test_data, mnist_test_label = unselected_train_dataset_data[:, np.newaxis,:,:],\
                                     unselected_train_dataset_label
 
@@ -131,8 +135,8 @@ def train(model, device, train_loader, optimizer, epoch):
         correct = 0
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-        output, _ = model(data)
-        loss = F.nll_loss(torch.log(output), target)
+        output, _ = model(data.float())
+        loss = F.nll_loss(torch.log(output), target.long())
         loss.backward()
         optimizer.step()
         pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
@@ -147,9 +151,9 @@ use_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if use_cuda else "cpu")
 print(device)
 model = Net().to(device)
-if device == 'cuda':
-    model = torch.nn.DataParallel(model)
-    cudnn.benchmark = True
+# if device == 'cuda':
+#     model = torch.nn.DataParallel(model)
+#     cudnn.benchmark = True
 
 # model traiing
 train_epoch = 7
