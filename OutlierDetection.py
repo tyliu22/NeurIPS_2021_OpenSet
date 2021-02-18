@@ -30,6 +30,7 @@ def OutlierDetection(train_data_last_layer, train_data_hidden,
     #     raise NameError('Input parameters less than 2, cannot calculate the detection rate')
     # build outlier detection model
     print('===> Outlier detector: starting')
+    print('===> Parameter setting threshold:', contamination)
     outlier_detector_last_layer = IsolationForest(random_state=r_seed, n_estimators=n_estimators, verbose=verbose,
                                                   max_samples=max_samples, contamination=contamination)
     outlier_detector_hidden = IsolationForest(random_state=r_seed, n_estimators=n_estimators, verbose=verbose, max_samples=max_samples,

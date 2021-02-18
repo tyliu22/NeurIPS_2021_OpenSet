@@ -61,40 +61,14 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128)
 #         # log_softmax
 #         # output = F.softmax(x, dim=1)
 #         return output, x_hidden
-
-# class Net(nn.Module):
-#     def __init__(self):
-#         super(Net, self).__init__()
-#         self.conv1 = nn.Conv2d(1, 100, 5, 1)
-#         self.conv2 = nn.Conv2d(100, 100, 5, 1)
-#         self.conv3 = nn.Conv2d(100, 100, 5, 1)
-#         self.conv4 = nn.Conv2d(100, 100, 5, 1)
-#         self.fc1 = nn.Linear(3*3*100, 300)
-#         self.fc2 = nn.Linear(300, 100)
-#         self.fc3 = nn.Linear(100, 10)
-#
-#     def forward(self, x):
-#         x = F.relu(self.conv1(x))
-#         x = F.relu(self.conv2(x))
-#         x = F.max_pool2d(x, 2, 2)
-#         x = F.relu(self.conv3(x))
-#         x = F.max_pool2d(x, 2, 2)
-#         x = x.view(-1, 3*3*100)
-#         x = self.fc1(x)
-#         x_hidden = self.fc2(x)
-#         output = F.softmax(self.fc3(x_hidden), dim=1)
-#         # output = F.softmax(x, dim=1)
-#         return output, x_hidden
-
-
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 100, 7, 1)
-        self.conv2 = nn.Conv2d(100, 100, 7, 1)
-        self.conv3 = nn.Conv2d(100, 100, 7, 1)
-        self.conv4 = nn.Conv2d(100, 100, 7, 1)
-        self.fc1 = nn.Linear(2*2*100, 300)
+        self.conv1 = nn.Conv2d(1, 100, 5, 1)
+        self.conv2 = nn.Conv2d(100, 100, 5, 1)
+        self.conv3 = nn.Conv2d(100, 100, 5, 1)
+        self.conv4 = nn.Conv2d(100, 100, 5, 1)
+        self.fc1 = nn.Linear(3*3*100, 300)
         self.fc2 = nn.Linear(300, 100)
         self.fc3 = nn.Linear(100, 10)
 
@@ -103,14 +77,13 @@ class Net(nn.Module):
         x = F.relu(self.conv2(x))
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv3(x))
-        # x = F.max_pool2d(x, 2, 2)
-        x = x.view(-1, 2*2*100)
+        x = F.max_pool2d(x, 2, 2)
+        x = x.view(-1, 3*3*100)
         x = self.fc1(x)
         x_hidden = self.fc2(x)
         output = F.softmax(self.fc3(x_hidden), dim=1)
         # output = F.softmax(x, dim=1)
         return output, x_hidden
-
 
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
@@ -201,37 +174,8 @@ random_noise = np.random.uniform(
 x_mnist_noise_test[np.where(x_mnist_noise_test == 0)] = random_noise
 
 
-# ## Omniglot
-def load_omniglot_eval(data_path):
-    omniglot_data_list = []
-    with zipfile.ZipFile(data_path) as zf:
-        for filename in zf.namelist():
-            if '.png' in filename:
-                zip_data = zf.read(filename)
-                bytes_io = BytesIO(zip_data)
-                pil_img = Image.open(bytes_io)
-                pil_img = pil_img.resize((28, 28))
-                omniglot_data_list.append([1 - np.array(pil_img) * 1.0])
-
-    omniglot_data = np.concatenate(omniglot_data_list)
-    return omniglot_data
-
-omniglot_data = load_omniglot_eval(omniglot_data_path)
-sample_idx = np.random.permutation(omniglot_data.shape[0])[:sample_size]
-x_omniglot_test = omniglot_data[sample_idx]
-
-
 x_noise_test = np.random.uniform(0, 1, (sample_size, 1, 28, 28))
-
-# x_mnist_test, x_mnist_noise_test, x_omniglot_test, x_noise_test
-x_mnist_noise_test = torch.FloatTensor(x_mnist_noise_test)
-x_omniglot_test = torch.FloatTensor(x_omniglot_test).unsqueeze(1)
 x_noise_test = torch.FloatTensor(x_noise_test)
-
-
-print('x_mnist_test Dataset shape:', x_mnist_test.shape)
-print('x_mnist_noise_test Dataset shape:', x_mnist_noise_test.shape)
-print('x_omniglot_test Dataset shape:', x_omniglot_test.shape)
 print('x_noise_test Dataset shape:', x_noise_test.shape)
 
 
@@ -240,18 +184,12 @@ print('x_noise_test Dataset shape:', x_noise_test.shape)
 # plt.show()
 
 with torch.no_grad():
-    # result_mnist_train_last_layer, result_mnist_train_hidden = model(x_mnist_train.to(device))
     result_mnist_test_last_layer, result_mnist_test_hidden = model(x_mnist_test.to(device))
-    result_mnist_noise_test_last_layer, result_mnist_noise_test_hidden = model(x_mnist_noise_test.to(device))
-    result_omniglot_test_last_layer, result_omniglot_test_hidden = model(x_omniglot_test.to(device))
     result_noise_last_layer, result_noise_hidden = model(x_noise_test.to(device))
 
 
-
-abnormal_datasets_name = ['mnist noise', 'omniglot test', 'noise']
-abnormal_datasets = [result_mnist_noise_test_last_layer, result_mnist_noise_test_hidden,
-                     result_omniglot_test_last_layer, result_omniglot_test_hidden,
-                     result_noise_last_layer, result_noise_hidden]
+abnormal_datasets_name = ['noise']
+abnormal_datasets = [result_noise_last_layer, result_noise_hidden]
 
 for i in range(1,11,1):
     OutlierDetection(result_mnist_train_last_layer, result_mnist_train_hidden,
@@ -260,7 +198,6 @@ for i in range(1,11,1):
                      sample_size=10000, r_seed=0, n_estimators=1000, verbose=0,
                      max_samples=10000, contamination=0.01*i)
 print('End')
-
 
 
 # def plot_tsne(features, labels, save_eps=False):

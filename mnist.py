@@ -206,15 +206,22 @@ outlier_detector_l2 = IsolationForest(random_state=r_seed, n_estimators=1000, ve
 outlier_detector_l1.fit(result_mnist_train)
 outlier_detector_l2.fit(result_mnist_train_base)
 
+outlier_mnist_train = outlier_detector_l1.predict(result_mnist_train)
 outlier_mnist = outlier_detector_l1.predict(result_mnist_test)
 outlier_omniglot = outlier_detector_l1.predict(result_omniglot_test)
 outlier_mnist_noise = outlier_detector_l1.predict(result_mnist_noise_test)
 outlier_noise = outlier_detector_l1.predict(result_noise_test)
 
+outlier_mnist_train += outlier_detector_l2.predict(result_mnist_train_base)
 outlier_mnist += outlier_detector_l2.predict(result_mnist_test_base)
 outlier_omniglot += outlier_detector_l2.predict(result_omniglot_test_base)
 outlier_mnist_noise += outlier_detector_l2.predict(result_mnist_noise_test_base)
 outlier_noise += outlier_detector_l2.predict(result_noise_test_base)
+
+
+outlier_mnist_train[outlier_mnist_train <= 1] = -1
+outlier_mnist_train[outlier_mnist_train > 1] = 0
+outlier_mnist_train[outlier_mnist_train == 0] = result_mnist_train_base.argmax(axis=1)[outlier_mnist_train == 0]
 
 outlier_mnist[outlier_mnist <= 1] = -1
 outlier_mnist[outlier_mnist > 1] = 0
@@ -232,7 +239,8 @@ outlier_noise[outlier_noise <= 1] = -1
 outlier_noise[outlier_noise > 1] = 0
 outlier_noise[outlier_noise == 0] = result_noise_test_base.argmax(axis=1)[outlier_noise == 0]
 
-print('mnist detection rate:', (outlier_mnist == -1).sum() / outlier_mnist.shape[0])
+print('mnist train detection rate:', (outlier_mnist_train == -1).sum() / outlier_mnist_train.shape[0])
+print('mnist test detection rate:', (outlier_mnist == -1).sum() / outlier_mnist.shape[0])
 print('omniglot detection rate:', (outlier_omniglot == -1).sum() / outlier_omniglot.shape[0])
 print('mnist_noise detection rate:', (outlier_mnist_noise == -1).sum() / outlier_mnist_noise.shape[0])
 print('noise detection rate:', (outlier_noise == -1).sum() / outlier_noise.shape[0])
@@ -284,9 +292,7 @@ def plot_tsne(features, labels, save_eps=False):
             plt.savefig('tsne.eps', dpi=600, format='eps')
         plt.show()
 
-
 plot_tsne(result_mnist_train_base, x_mnist_train_label.cpu().numpy())
-
 plot_tsne(result_mnist_test_base, x_mnist_test_label.cpu().numpy())
 
 
