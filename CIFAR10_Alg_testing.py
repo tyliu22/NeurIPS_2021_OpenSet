@@ -1,5 +1,4 @@
 '''Train CIFAR10 with PyTorch.'''
-import torch
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
@@ -13,7 +12,7 @@ import zipfile
 import numpy as np
 
 from models import *
-from OutlierDetection import OutlierDetection
+from Utils.OutlierDetection import OutlierDetection
 
 r_seed = 0
 np.random.seed(r_seed)

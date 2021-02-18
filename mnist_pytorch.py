@@ -12,9 +12,7 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 from torchvision import datasets, transforms
 
-from sklearn.manifold import TSNE
-from OutlierDetection import OutlierDetection
-import matplotlib.pyplot as plt
+from Utils.OutlierDetection import OutlierDetection
 
 r_seed = 0
 torch.manual_seed(r_seed)

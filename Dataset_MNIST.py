@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-import zipfile
-from PIL import Image
-from io import BytesIO
 import numpy as np
 
 import torch
@@ -10,11 +7,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
+from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 
-from sklearn.manifold import TSNE
-from OutlierDetection import OutlierDetection
-import matplotlib.pyplot as plt
+from Utils.OutlierDetection import OutlierDetection
+
+from Utils.MyDataLoader import subDataset
+
+
 
 r_seed = 0
 torch.manual_seed(r_seed)
@@ -36,36 +36,43 @@ label_class = np.array(list(train_dataset.class_to_idx.values()))
 np.random.shuffle(label_class)
 selected_class = label_class[0:6]
 unselected_class = label_class[6:10]
+print('MNIST training class:', selected_class)
+print('MNIST testing  class:', unselected_class)
 
 selected_train_dataset_label = np.empty(shape=[0,0])
 selected_train_dataset_data = np.empty(shape=[0,28,28])
 for i in selected_class:
-    selected_train_dataset_label = np.append(selected_train_dataset_label,
-                                             train_dataset_label[np.where(train_dataset_label==i)])
     selected_train_dataset_data = np.append(selected_train_dataset_data,
                                              train_dataset_data[np.where(train_dataset_label==i)], axis=0)
+    selected_train_dataset_label = np.append(selected_train_dataset_label,
+                                             train_dataset_label[np.where(train_dataset_label==i)])
+
 
 unselected_train_dataset_label = np.empty(shape=[0,0])
 unselected_train_dataset_data = np.empty(shape=[0,28,28])
 for i in unselected_class:
-    unselected_train_dataset_label = np.append(unselected_train_dataset_label,
-                                             train_dataset_label[np.where(train_dataset_label==i)])
     unselected_train_dataset_data = np.append(unselected_train_dataset_data,
                                              train_dataset_data[np.where(train_dataset_label==i)], axis=0)
+    unselected_train_dataset_label = np.append(unselected_train_dataset_label,
+                                             train_dataset_label[np.where(train_dataset_label==i)])
+
+
+mnist_train_data, mnist_train_label = selected_train_dataset_data, selected_train_dataset_label
+mnist_test_data, mnist_test_label = unselected_train_dataset_data, unselected_train_dataset_label
+
+train_dataset = subDataset(mnist_train_data, mnist_train_label)
+test_dataset = subDataset(mnist_test_data, mnist_test_label)
+
+# 创建DataLoader迭代器
+# 创建DataLoader，batch_size设置为2，shuffle=False不打乱数据顺序，num_workers= 4使用4个子进程：
+train_dataloader = DataLoader.DataLoader(train_dataset, batch_size=128, shuffle=False, num_workers=4)
+test_dataloader = DataLoader.DataLoader(test_dataset, batch_size=128, shuffle=False, num_workers=4)
 
 
 
 
 
 
-
-
-
-
-
-
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128)
 
 
 # class Net(nn.Module):
