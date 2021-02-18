@@ -29,6 +29,41 @@ train_dataset = datasets.MNIST('../data', train=True,
                                download=True, transform=transform)
 test_dataset = datasets.MNIST('../data', train=False,
                               transform=transform)
+
+train_dataset_data = train_dataset.train_data.numpy()
+train_dataset_label = train_dataset.train_labels.numpy()
+label_class = np.array(list(train_dataset.class_to_idx.values()))
+np.random.shuffle(label_class)
+selected_class = label_class[0:6]
+unselected_class = label_class[6:10]
+
+selected_train_dataset_label = np.empty(shape=[0,0])
+selected_train_dataset_data = np.empty(shape=[0,28,28])
+for i in selected_class:
+    selected_train_dataset_label = np.append(selected_train_dataset_label,
+                                             train_dataset_label[np.where(train_dataset_label==i)])
+    selected_train_dataset_data = np.append(selected_train_dataset_data,
+                                             train_dataset_data[np.where(train_dataset_label==i)], axis=0)
+
+unselected_train_dataset_label = np.empty(shape=[0,0])
+unselected_train_dataset_data = np.empty(shape=[0,28,28])
+for i in unselected_class:
+    unselected_train_dataset_label = np.append(unselected_train_dataset_label,
+                                             train_dataset_label[np.where(train_dataset_label==i)])
+    unselected_train_dataset_data = np.append(unselected_train_dataset_data,
+                                             train_dataset_data[np.where(train_dataset_label==i)], axis=0)
+
+
+
+
+
+
+
+
+
+
+
+
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=128)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128)
 
@@ -60,7 +95,7 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=128)
 #         # output = self.fc2(x)
 #         # log_softmax
 #         # output = F.softmax(x, dim=1)
-#         return output, x_hidden
+#         return output, x_hiddennp.random.shuffle(label_class)
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -188,6 +223,7 @@ with torch.no_grad():
     result_noise_last_layer, result_noise_hidden = model(x_noise_test.to(device))
 
 
+# ******************* Outlier Detection ********************** #
 abnormal_datasets_name = ['noise']
 abnormal_datasets = [result_noise_last_layer, result_noise_hidden]
 
