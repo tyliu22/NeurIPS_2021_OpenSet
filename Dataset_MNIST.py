@@ -186,8 +186,8 @@ print('mnist_test Dataset shape:', mnist_test_data.shape[0])
 # plt.show()
 
 with torch.no_grad():
-    result_mnist_train_last_layer, result_mnist_train_hidden = model(mnist_train_data.to(device))
-    result_mnist_test_last_layer, result_mnist_test_hidden = model(mnist_test_data.to(device))
+    result_mnist_train_last_layer, result_mnist_train_hidden = model(mnist_train_data.float().to(device))
+    result_mnist_test_last_layer, result_mnist_test_hidden = model(mnist_test_data.float().to(device))
 
 
 
@@ -198,40 +198,38 @@ outlier_detector_l1 = IsolationForest(random_state=r_seed, n_estimators=1000, ve
 outlier_detector_l2 = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
                                       contamination=0.05)
 
-result_mnist_train = result_cifar10_train.cpu().numpy()
-result_mnist_train_base = result_cifar10_train_base.cpu().numpy()
+result_mnist_train_hidden = result_mnist_train_hidden.cpu().numpy()
+result_mnist_train_last_layer = result_mnist_train_last_layer.cpu().numpy()
 # data argument
-outlier_detector_l1.fit(result_cifar10_train)
-outlier_detector_l2.fit(result_cifar10_train_base)
-
+outlier_detector_l1.fit(result_mnist_train_hidden)
+outlier_detector_l2.fit(result_mnist_train_last_layer)
 
 # **************** Tensor2numpy **************** #
-result_Imagenet_crop_test = result_Imagenet_crop_test.cpu().numpy()
-result_Imagenet_crop_test_base = result_Imagenet_crop_test_base.cpu().numpy()
-
+result_mnist_test_hidden = result_mnist_test_hidden.cpu().numpy()
+result_mnist_test_last_layer = result_mnist_test_last_layer.cpu().numpy()
 
 # **************** outlier predict **************** #
-outlier_cifar10_train = outlier_detector_l1.predict(result_cifar10_train)
-outlier_cifar10_train += outlier_detector_l2.predict(result_cifar10_train_base)
+outlier_mnist_train = outlier_detector_l1.predict(result_mnist_train_hidden)
+outlier_mnist_train += outlier_detector_l2.predict(result_mnist_train_last_layer)
 
-outlier_Imagenet_crop = outlier_detector_l1.predict(result_Imagenet_crop_test)
-outlier_Imagenet_crop += outlier_detector_l2.predict(result_Imagenet_crop_test_base)
+outlier_mnist_test = outlier_detector_l1.predict(result_mnist_test_hidden)
+outlier_mnist_test += outlier_detector_l2.predict(result_mnist_test_last_layer)
 
 
 # **************** outlier predict final **************** #
-outlier_cifar10_train[outlier_cifar10_train <= 1] = -1
-outlier_cifar10_train[outlier_cifar10_train > 1] = 0
-outlier_cifar10_train[outlier_cifar10_train == 0] = \
-    result_cifar10_train_base.argmax(axis=1)[outlier_cifar10_train == 0]
+outlier_mnist_train[outlier_mnist_train <= 1] = -1
+outlier_mnist_train[outlier_mnist_train > 1] = 0
+outlier_mnist_train[outlier_mnist_train == 0] = \
+    result_mnist_train_last_layer.argmax(axis=1)[outlier_mnist_train == 0]
 
-outlier_Imagenet_crop[outlier_Imagenet_crop <= 1] = -1
-outlier_Imagenet_crop[outlier_Imagenet_crop > 1] = 0
-outlier_Imagenet_crop[outlier_Imagenet_crop == 0] = \
-    result_Imagenet_crop_test_base.argmax(axis=1)[outlier_Imagenet_crop == 0]
+outlier_mnist_test[outlier_mnist_test <= 1] = -1
+outlier_mnist_test[outlier_mnist_test > 1] = 0
+outlier_mnist_test[outlier_mnist_test == 0] = \
+    result_mnist_test_last_layer.argmax(axis=1)[outlier_mnist_test == 0]
 
 # **************** Print predict result **************** #
-print('outlier_cifar10_train detection rate:', (outlier_cifar10_train == -1).sum() / outlier_cifar10_train.shape[0])
-print('outlier_Imagenet_crop detection rate:', (outlier_Imagenet_crop == -1).sum() / outlier_Imagenet_crop.shape[0])
+print('outlier_mnist_train detection rate:', (outlier_mnist_train == -1).sum() / outlier_mnist_train.shape[0])
+print('outlier_mnist_test detection rate:', (outlier_mnist_test == -1).sum() / outlier_mnist_test.shape[0])
 print('End')
 
 
