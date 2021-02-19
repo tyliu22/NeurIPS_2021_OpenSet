@@ -23,7 +23,6 @@ def OutlierDetection(train_data_last_layer, train_data_hidden,
             [outlier_dataset_1_last_layer, outlier_dataset_1_data_hidden, ... ]
 
     data type:
-
     """
 
     # if num_of_para < 2:

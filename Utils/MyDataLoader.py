@@ -16,8 +16,10 @@ class subDataset(Dataset):
 
     # 得到数据内容和标签
     def __getitem__(self, index):
-        data = torch.Tensor(self.Data[index])
-        label = torch.LongTensor(self.Label[index])
+        data = self.Data[index]
+        label = self.Label[index]
+        # data = torch.Tensor(self.Data[index])
+        # label = torch.LongTensor(self.Label[index])
         return data, label
 
 def main():

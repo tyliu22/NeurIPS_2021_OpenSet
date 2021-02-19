@@ -12,11 +12,10 @@ from torchvision import datasets, transforms
 import torch.utils.data.dataloader as DataLoader
 
 from sklearn.ensemble import IsolationForest
+from sklearn.metrics import roc_auc_score
 
-from Utils.OutlierDetection import OutlierDetection
+from Utils.AUROC_Score import AUROC_score
 from Utils.MyDataLoader import subDataset
-
-
 
 
 r_seed = 0
@@ -179,7 +178,7 @@ for epoch in range(1, train_epoch):
 
 mnist_train_data = torch.tensor(mnist_train_data)
 mnist_test_data = torch.tensor(mnist_test_data)
-print('mnist_test Dataset shape:', mnist_test_data.shape[0])
+# print('mnist_test Dataset shape:', mnist_test_data.shape[0])
 
 # plot figure
 # plt.imshow(x_noise_test[1].numpy().reshape(28,28), cmap='gray')
@@ -189,48 +188,19 @@ with torch.no_grad():
     result_mnist_train_last_layer, result_mnist_train_hidden = model(mnist_train_data.float().to(device))
     result_mnist_test_last_layer, result_mnist_test_hidden = model(mnist_test_data.float().to(device))
 
+# *********************** AUROC_score ************************* #
+num_train_sample = mnist_train_data.shape[0]
+num_test_sample = mnist_test_data.shape[0]
 
-
+print('===> AUROC_score start')
 # ******************* Outlier Detection ********************** #
-sample_size = mnist_test_data.shape
-outlier_detector_l1 = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
-                                      contamination=0.05)
-outlier_detector_l2 = IsolationForest(random_state=r_seed, n_estimators=1000, verbose=0, max_samples=10000,
-                                      contamination=0.05)
+# def AUROC_score(train_data_last_layer, train_data_hidden, num_train_sample,
+#                 test_data_last_layer, test_data_hidden, num_test_sample,
+#                 r_seed=0, n_estimators=1000, verbose=0,
+#                 max_samples=10000, contamination=0.01):
+AUROC_score(result_mnist_train_last_layer, result_mnist_train_hidden, num_train_sample,
+            result_mnist_test_last_layer, result_mnist_test_hidden, num_test_sample,
+            r_seed=0, n_estimators=1000, verbose=0,
+            max_samples=10000, contamination=0.1)
 
-result_mnist_train_hidden = result_mnist_train_hidden.cpu().numpy()
-result_mnist_train_last_layer = result_mnist_train_last_layer.cpu().numpy()
-# data argument
-outlier_detector_l1.fit(result_mnist_train_hidden)
-outlier_detector_l2.fit(result_mnist_train_last_layer)
-
-# **************** Tensor2numpy **************** #
-result_mnist_test_hidden = result_mnist_test_hidden.cpu().numpy()
-result_mnist_test_last_layer = result_mnist_test_last_layer.cpu().numpy()
-
-# **************** outlier predict **************** #
-outlier_mnist_train = outlier_detector_l1.predict(result_mnist_train_hidden)
-outlier_mnist_train += outlier_detector_l2.predict(result_mnist_train_last_layer)
-
-outlier_mnist_test = outlier_detector_l1.predict(result_mnist_test_hidden)
-outlier_mnist_test += outlier_detector_l2.predict(result_mnist_test_last_layer)
-
-
-# **************** outlier predict final **************** #
-outlier_mnist_train[outlier_mnist_train <= 1] = -1
-outlier_mnist_train[outlier_mnist_train > 1] = 0
-outlier_mnist_train[outlier_mnist_train == 0] = \
-    result_mnist_train_last_layer.argmax(axis=1)[outlier_mnist_train == 0]
-
-outlier_mnist_test[outlier_mnist_test <= 1] = -1
-outlier_mnist_test[outlier_mnist_test > 1] = 0
-outlier_mnist_test[outlier_mnist_test == 0] = \
-    result_mnist_test_last_layer.argmax(axis=1)[outlier_mnist_test == 0]
-
-# **************** Print predict result **************** #
-print('outlier_mnist_train detection rate:', (outlier_mnist_train == -1).sum() / outlier_mnist_train.shape[0])
-print('outlier_mnist_test detection rate:', (outlier_mnist_test == -1).sum() / outlier_mnist_test.shape[0])
-print('End')
-
-
-
+print('Algorithm End')
