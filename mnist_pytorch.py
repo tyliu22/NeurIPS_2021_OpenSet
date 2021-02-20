@@ -93,8 +93,8 @@ class Net(nn.Module):
         self.conv3 = nn.Conv2d(100, 100, 7, 1)
         self.conv4 = nn.Conv2d(100, 100, 7, 1)
         self.fc1 = nn.Linear(2*2*100, 300)
-        self.fc2 = nn.Linear(300, 100)
-        self.fc3 = nn.Linear(100, 10)
+        self.fc2 = nn.Linear(300, 20)
+        self.fc3 = nn.Linear(20, 10)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
