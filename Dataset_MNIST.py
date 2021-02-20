@@ -123,6 +123,30 @@ class Net(nn.Module):
 #         # output = F.softmax(x, dim=1)
 #         return output, x_hidden
 
+# class Net(nn.Module):
+#     def __init__(self):
+#         super(Net, self).__init__()
+#         self.conv1 = nn.Conv2d(1, 100, 7, 1)
+#         self.conv2 = nn.Conv2d(100, 100, 7, 1)
+#         self.conv3 = nn.Conv2d(100, 100, 7, 1)
+#         self.fc1 = nn.Linear(2*2*100, 100)
+#         self.fc2 = nn.Linear(100, 10)
+#         self.fc3 = nn.Linear(10, 6)
+#
+#     def forward(self, x):
+#         x = F.relu(self.conv1(x))
+#         x = F.relu(self.conv2(x))
+#         x = F.max_pool2d(x, 2, 2)
+#         x = F.relu(self.conv3(x))
+#         # x = F.max_pool2d(x, 2, 2)
+#         x = x.view(-1, 2*2*100)
+#         x = self.fc1(x)
+#         x_hidden = self.fc2(x)
+#         output = F.softmax(self.fc3(x_hidden), dim=1)
+#         # output = F.softmax(x, dim=1)
+#         return output, x_hidden
+
+
 
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
@@ -154,7 +178,7 @@ model = Net().to(device)
 #     cudnn.benchmark = True
 
 # model traiing
-train_epoch = 6
+train_epoch = 20
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 for epoch in range(1, train_epoch):
     train(model, device, train_dataloader, optimizer, epoch)
