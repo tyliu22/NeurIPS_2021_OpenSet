@@ -3,13 +3,14 @@ import torch
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
+import torch.nn.functional as F
 
 import os
 import argparse
 import numpy as np
 
-from models import *
-from Utils.AUROC_Score import AUROC_score
+from models.dla_part import DLA6
+from Utils.AUROC_Score_single import AUROC_score
 from Utils.MyDataLoader import subDataset
 import torch.utils.data.dataloader as DataLoader
 
@@ -103,19 +104,21 @@ test_dataloader = DataLoader.DataLoader(test_dataset, batch_size=128, shuffle=Tr
 # ******************************************************************* #
 cifar100_dataset = torchvision.datasets.CIFAR100(
     root='./data', train=True, download=True, transform=transform_train)
-# test_dataset = torchvision.datasets.CIFAR100(
-#     root='./data', train=False, download=True, transform=transform_test)
 
-unselected_train_dataset_label = np.empty(shape=[0])
-unselected_train_dataset_data = np.empty(shape=[0,32,32,3])
-for i in unselected_class:
-    unselected_train_dataset_data = np.append(unselected_train_dataset_data,
-                                             train_dataset_data[np.where(train_dataset_label==i)], axis=0)
+outlier_dataset_data, outlier_dataset_label = cifar100_dataset.data, cifar100_dataset.targets
+label_class = np.array(list(cifar100_dataset.class_to_idx.values()))
+# select 6 classes as training dataset, 4 dataset as testing dataset
+label_class = label_class[10:100]
+np.random.shuffle(label_class)
+selected_class = label_class[0:10]
+print(' outlier class:', selected_class)
 
-Outlier_data = unselected_train_dataset_data.transpose(0,3,1,2)
+outlier_data = np.empty(shape=[0,32,32,3])
+for i in selected_class:
+    outlier_data = np.append(outlier_data,outlier_dataset_data[np.where(outlier_dataset_label==i)], axis=0)
 
-
-
+# numpy dimension [10000, 3, 32, 32]
+outlier_data = outlier_data.transpose(0,3,1,2)
 
 
 # ******************************************************************* #
@@ -124,7 +127,7 @@ Outlier_data = unselected_train_dataset_data.transpose(0,3,1,2)
 classes = ('plane', 'car', 'bird', 'cat', 'deer',
            'dog', 'frog', 'horse', 'ship', 'truck')
 print('==> Building model..')
-net = DLA()
+net = DLA6()
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -133,7 +136,49 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ckpt.pth')
+    checkpoint = torch.load('./checkpoint/ckpt6.pth')
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
+
+
+
+# ******************************************************************* #
+#                        Model embeding
+# ******************************************************************* #
+# CIFAR10_train_data    Outlier_data
+
+# 2 Float Tensor
+CIFAR10_train_data = torch.FloatTensor(CIFAR10_train_data)
+outlier_data = torch.FloatTensor(outlier_data)
+
+with torch.no_grad():
+    result_cifar10_train_last_layer, result_cifar10_train_hidden\
+        = net(CIFAR10_train_data.to(device))
+    result_cifar10_outlier_last_layer, result_cifar10_outlier_hidden\
+        = net(outlier_data.to(device))
+
+# ******************************************************************* #
+#                    Calculating AUROC_score
+# ******************************************************************* #
+# *********************** AUROC_score ************************* #
+num_train_sample = CIFAR10_train_data.shape[0]
+num_test_sample = outlier_data.shape[0]
+
+print('===> AUROC_score start')
+# ******************* Outlier Detection ********************** #
+# def AUROC_score(train_data_last_layer, train_data_hidden, num_train_sample,
+#                 test_data_last_layer, test_data_hidden, num_test_sample,
+#                 r_seed=0, n_estimators=1000, verbose=0,
+#                 max_samples=10000, contamination=0.01):
+
+for i in range(2,11,1):
+    AUROC_score(F.softmax(result_cifar10_train_last_layer), result_cifar10_train_hidden, num_train_sample,
+                F.softmax(result_cifar10_outlier_last_layer), result_cifar10_outlier_hidden, num_test_sample,
+                r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
+
+print('Algorithm End')
+
+
+
+

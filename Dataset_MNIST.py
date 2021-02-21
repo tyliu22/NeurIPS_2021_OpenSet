@@ -98,7 +98,6 @@ class Net(nn.Module):
         # output = F.softmax(x, dim=1)
         return output, x_hidden
 
-
 # class Net(nn.Module):
 #     def __init__(self):
 #         super(Net, self).__init__()
@@ -145,8 +144,6 @@ class Net(nn.Module):
 #         output = F.softmax(self.fc3(x_hidden), dim=1)
 #         # output = F.softmax(x, dim=1)
 #         return output, x_hidden
-
-
 
 def train(model, device, train_loader, optimizer, epoch):
     model.train()
@@ -209,8 +206,8 @@ print('===> AUROC_score start')
 #                 max_samples=10000, contamination=0.01):
 
 for i in range(2,11,1):
-    AUROC_score(result_mnist_train_last_layer, F.softmax(result_mnist_train_hidden, dim=0), num_train_sample,
-                result_mnist_test_last_layer, F.softmax(result_mnist_test_hidden, dim=0), num_test_sample,
+    AUROC_score(result_mnist_train_last_layer, result_mnist_train_hidden, num_train_sample,
+                result_mnist_test_last_layer, result_mnist_test_hidden, num_test_sample,
                 r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
 
 print('Algorithm End')

@@ -1,4 +1,5 @@
 '''Train CIFAR10 with PyTorch.'''
+import torch
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms

@@ -1,13 +1,15 @@
 '''Train CIFAR10 with PyTorch.'''
+import torch
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
+import torch.nn.functional as F
 
 import os
 import argparse
 import numpy as np
 
-from models import *
+from models.dla_part import DLA6
 from Utils.AUROC_Score import AUROC_score
 from Utils.MyDataLoader import subDataset
 import torch.utils.data.dataloader as DataLoader
@@ -109,15 +111,13 @@ for i in unselected_class:
 Outlier_data = unselected_train_dataset_data.transpose(0,3,1,2)
 
 
-
-
 # ******************************************************************* #
-#                        Making Prediction
+#                        Loading model
 # ******************************************************************* #
 classes = ('plane', 'car', 'bird', 'cat', 'deer',
            'dog', 'frog', 'horse', 'ship', 'truck')
 print('==> Building model..')
-net = DLA()
+net = DLA6()
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -126,7 +126,49 @@ if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ckpt.pth')
+    checkpoint = torch.load('./checkpoint/ckpt6.pth')
     net.load_state_dict(checkpoint['net'])
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
+
+
+
+# ******************************************************************* #
+#                        Model embeding
+# ******************************************************************* #
+# CIFAR10_train_data    Outlier_data
+
+# 2 Float Tensor
+CIFAR10_train_data = torch.FloatTensor(CIFAR10_train_data)
+Outlier_data = torch.FloatTensor(Outlier_data)
+
+with torch.no_grad():
+    result_cifar10_train_last_layer, result_cifar10_train_hidden\
+        = net(CIFAR10_train_data.to(device))
+    result_cifar10_outlier_last_layer, result_cifar10_outlier_hidden\
+        = net(Outlier_data.to(device))
+
+# ******************************************************************* #
+#                    Calculating AUROC_score
+# ******************************************************************* #
+# *********************** AUROC_score ************************* #
+num_train_sample = CIFAR10_train_data.shape[0]
+num_test_sample = Outlier_data.shape[0]
+
+print('===> AUROC_score start')
+# ******************* Outlier Detection ********************** #
+# def AUROC_score(train_data_last_layer, train_data_hidden, num_train_sample,
+#                 test_data_last_layer, test_data_hidden, num_test_sample,
+#                 r_seed=0, n_estimators=1000, verbose=0,
+#                 max_samples=10000, contamination=0.01):
+
+for i in range(2,41,1):
+    AUROC_score(result_cifar10_train_last_layer, result_cifar10_train_hidden, num_train_sample,
+                result_cifar10_outlier_last_layer, result_cifar10_outlier_hidden, num_test_sample,
+                r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
+
+print('Algorithm End')
+
+
+
+
