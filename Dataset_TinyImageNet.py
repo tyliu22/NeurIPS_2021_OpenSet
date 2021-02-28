@@ -12,7 +12,7 @@ from torchvision import datasets, transforms
 import torch.utils.data.dataloader as DataLoader
 import torchvision.models as models
 from torch.optim import lr_scheduler
-from train_model import train_model
+from Utils.train_model import train_model
 
 from Utils.AUROC_Score import AUROC_score
 from Utils.MyDataLoader import subDataset

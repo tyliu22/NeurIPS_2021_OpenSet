@@ -16,7 +16,7 @@ import sys
 def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, scheduler, num_epochs=25):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     since = time.time()
-    liveloss = PlotLosses()
+    # liveloss = PlotLosses()
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
 
@@ -81,14 +81,14 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
                 best_acc = epoch_acc
                 best_model_wts = copy.deepcopy(model.state_dict())
 
-        liveloss.update({
-            'log loss': avg_loss,
-            'val_log loss': val_loss,
-            'accuracy': t_acc,
-            'val_accuracy': val_acc
-        })
+        # liveloss.update({
+        #     'log loss': avg_loss,
+        #     'val_log loss': val_loss,
+        #     'accuracy': t_acc,
+        #     'val_accuracy': val_acc
+        # })
 
-        liveloss.draw()
+        # liveloss.draw()
         print('Train Loss: {:.4f} Acc: {:.4f}'.format(avg_loss, t_acc))
         print('Val Loss: {:.4f} Acc: {:.4f}'.format(val_loss, val_acc))
         print('Best Val Accuracy: {}'.format(best_acc))
@@ -103,4 +103,4 @@ def train_model(model, dataloaders, dataset_sizes, criterion, optimizer, schedul
     model.load_state_dict(best_model_wts)
 
 
-return model
+    return model
