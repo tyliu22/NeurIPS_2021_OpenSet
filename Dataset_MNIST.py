@@ -10,9 +10,9 @@ from torchvision import datasets, transforms
 import torch.utils.data.dataloader as DataLoader
 import matplotlib.pyplot as plt
 
-from Utils.AUROC_Score_single import AUROC_score
+from Utils.AUROC_Score import AUROC_score
 from Utils.MyDataLoader import subDataset
-
+from sklearn.manifold import TSNE
 
 r_seed = 0
 torch.manual_seed(r_seed)
@@ -39,29 +39,29 @@ print('MNIST training class:', selected_class)
 print('MNIST testing  class:', unselected_class)
 
 selected_train_dataset_label = np.empty(shape=[0])
-selected_train_dataset_data = np.empty(shape=[0,28,28])
+selected_train_dataset_data = np.empty(shape=[0, 28, 28])
 for i in selected_class:
     selected_train_dataset_data = np.append(selected_train_dataset_data,
-                                             train_dataset_data[np.where(train_dataset_label==i)], axis=0)
+                                            train_dataset_data[np.where(train_dataset_label == i)], axis=0)
     selected_train_dataset_label = np.append(selected_train_dataset_label,
-                                             train_dataset_label[np.where(train_dataset_label==i)])
+                                             train_dataset_label[np.where(train_dataset_label == i)])
 num_class = int(10)
 for i in selected_class:
-    selected_train_dataset_label[np.where(selected_train_dataset_label==i)] = num_class
-    num_class=num_class+1
+    selected_train_dataset_label[np.where(selected_train_dataset_label == i)] = num_class
+    num_class = num_class + 1
 selected_train_dataset_label = (selected_train_dataset_label - 10).astype(int)
 
 unselected_train_dataset_label = np.empty(shape=[0])
-unselected_train_dataset_data = np.empty(shape=[0,28,28])
+unselected_train_dataset_data = np.empty(shape=[0, 28, 28])
 for i in unselected_class:
     unselected_train_dataset_data = np.append(unselected_train_dataset_data,
-                                             train_dataset_data[np.where(train_dataset_label==i)], axis=0)
+                                              train_dataset_data[np.where(train_dataset_label == i)], axis=0)
     # unselected_train_dataset_label = np.append(unselected_train_dataset_label,
     #                                          train_dataset_label[np.where(train_dataset_label==i)])
 
-mnist_train_data, mnist_train_label = selected_train_dataset_data[:, np.newaxis,:,:],\
+mnist_train_data, mnist_train_label = selected_train_dataset_data[:, np.newaxis, :, :], \
                                       selected_train_dataset_label
-mnist_test_data, mnist_test_label = unselected_train_dataset_data[:, np.newaxis,:,:],\
+mnist_test_data, mnist_test_label = unselected_train_dataset_data[:, np.newaxis, :, :], \
                                     unselected_train_dataset_label
 
 train_dataset = subDataset(mnist_train_data, mnist_train_label)
@@ -78,7 +78,7 @@ class Net(nn.Module):
         self.conv3 = nn.Conv2d(100, 100, 3, 1)
         self.conv4 = nn.Conv2d(100, 100, 3, 1)
         self.conv5 = nn.Conv2d(100, 100, 3, 1)
-        self.fc1 = nn.Linear(3*3*100, 300)
+        self.fc1 = nn.Linear(3 * 3 * 100, 300)
         self.fc2 = nn.Linear(300, 100)
         self.fc3 = nn.Linear(100, 6)
 
@@ -91,12 +91,13 @@ class Net(nn.Module):
         x = F.relu(self.conv4(x))
         x = F.relu(self.conv5(x))
         x = F.max_pool2d(x, 2, 2)
-        x = x.view(-1, 3*3*100)
+        x = x.view(-1, 3 * 3 * 100)
         x = self.fc1(x)
         x_hidden = self.fc2(x)
         output = F.softmax(self.fc3(x_hidden), dim=1)
         # output = F.softmax(x, dim=1)
         return output, x_hidden
+
 
 # class Net(nn.Module):
 #     def __init__(self):
@@ -161,7 +162,8 @@ def train(model, device, train_loader, optimizer, epoch):
         if batch_idx % 100 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tAccuracy:{:.4f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item(), correct/len(data)))
+                       100. * batch_idx / len(train_loader), loss.item(), correct / len(data)))
+
 
 # plt.imshow(mnist_train_data[1].numpy().reshape(28,28), cmap='gray')
 # plt.show()
@@ -180,7 +182,6 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4)
 for epoch in range(1, train_epoch):
     train(model, device, train_dataloader, optimizer, epoch)
     # test(model, device, test_loader)
-
 
 mnist_train_data = torch.tensor(mnist_train_data)
 mnist_test_data = torch.tensor(mnist_test_data)
@@ -205,9 +206,72 @@ print('===> AUROC_score start')
 #                 r_seed=0, n_estimators=1000, verbose=0,
 #                 max_samples=10000, contamination=0.01):
 
-for i in range(2,11,1):
-    AUROC_score(result_mnist_train_last_layer, result_mnist_train_hidden, num_train_sample,
-                result_mnist_test_last_layer, result_mnist_test_hidden, num_test_sample,
-                r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
+# for i in range(2,11,1):
+# AUROC_score(result_mnist_train_last_layer, result_mnist_train_hidden, num_train_sample,
+#             result_mnist_test_last_layer, result_mnist_test_hidden, num_test_sample,
+#             r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
+
+# detector result
+outlier_train_hidden_detector_label, outlier_test_hidden_detector_label = AUROC_score(
+    result_mnist_train_last_layer, result_mnist_train_hidden, num_train_sample,
+    result_mnist_test_last_layer, result_mnist_test_hidden, num_test_sample,
+    r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01 * i)
 
 print('Algorithm End')
+
+
+def plot_tsne(features, labels, save_eps=False):
+    ''' Plot TSNE figure. Set save_eps=True if you want to save a .eps file.
+    '''
+    tsne = TSNE(n_components=2, init='pca', random_state=0)
+    features_tsne = tsne.fit_transform(features)
+    x_min, x_max = np.min(features_tsne, 0), np.max(features_tsne, 0)
+    features_norm = (features_tsne - x_min) / (x_max - x_min)
+    for i in range(features_norm.shape[0]):
+        plt.text(features_norm[i, 0], features_norm[i, 1], str(labels[i]),
+                 color=plt.cm.Set1(labels[i] / 10.),
+                 fontdict={'weight': 'bold', 'size': 9})
+    plt.xticks([])
+    plt.yticks([])
+    plt.title('T-SNE')
+    if save_eps:
+        plt.savefig('/figures/tsne.eps', dpi=600, format='eps')
+    plt.show()
+
+
+result_mnist_train_hidden = result_mnist_train_hidden.cpu().numpy()
+result_mnist_test_hidden = result_mnist_test_hidden.cpu().numpy()
+
+tsne_data = np.append(result_mnist_train_hidden, result_mnist_test_hidden, axis=0)
+tsne_label_predictor = np.append(outlier_train_hidden_detector_label, outlier_test_hidden_detector_label)
+
+plot_tsne(tsne_data, tsne_label_predictor)
+
+# outlier_train_hidden_detector_label, outlier_test_hidden_detector_label
+# outlier_label = np.ones(5000, dtype=int) + 6
+# np.random.seed(9527)
+# np.random.shuffle(result_mnist_train_hidden)
+# tsne_data = result_mnist_train_hidden[0:5000,:]
+# np.random.seed(9527)
+# np.random.shuffle(selected_train_dataset_label)
+# np.random.shuffle(result_mnist_test_hidden)
+#
+#
+# np.random.seed(9527)
+# np.random.shuffle(result_mnist_test_hidden)
+#
+#
+# tsne_label = selected_train_dataset_label[0:5000]
+# tsne_data = np.append(tsne_data, result_mnist_test_hidden[0:5000, :], axis=0)
+# tsne_label = np.append(tsne_label, outlier_label)
+#
+# np.random.seed(9527)
+# np.random.shuffle(outlier_train_hidden_detector_label)
+# np.random.seed(9527)
+# np.random.shuffle(outlier_test_hidden_detector_label)
+# tsne_label_predictor = np.append(outlier_train_hidden_detector_label[0:5000], outlier_test_hidden_detector_label[0:5000])
+# # selected_train_dataset_label = np.append(selected_train_dataset_label, outlier_label)
+# # result_mnist_train_hidden = np.append(result_mnist_train_hidden, result_mnist_test_hidden)
+#
+# plot_tsne(tsne_data, tsne_label)
+# plot_tsne(tsne_data, tsne_label_predictor)

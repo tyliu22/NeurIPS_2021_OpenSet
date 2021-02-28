@@ -4,13 +4,14 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
 
 import os
 import argparse
 import numpy as np
 
 from models.dla_part import DLA6
-from Utils.AUROC_Score import AUROC_score
+from Utils.AUROC_Score_single import AUROC_score
 from Utils.MyDataLoader import subDataset
 import torch.utils.data.dataloader as DataLoader
 
@@ -162,13 +163,49 @@ print('===> AUROC_score start')
 #                 r_seed=0, n_estimators=1000, verbose=0,
 #                 max_samples=10000, contamination=0.01):
 
-for i in range(2,41,1):
+for i in range(2,11,1):
     AUROC_score(result_cifar10_train_last_layer, result_cifar10_train_hidden, num_train_sample,
                 result_cifar10_outlier_last_layer, result_cifar10_outlier_hidden, num_test_sample,
-                r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
+                r_seed=0, n_estimators=1000, verbose=0, max_samples=1.0, contamination=0.01*i)
 
 print('Algorithm End')
 
 
+def plot_tsne(features, labels, save_eps=False):
+    ''' Plot TSNE figure. Set save_eps=True if you want to save a .eps file.
+    '''
+    tsne = TSNE(n_components=2, init='pca', random_state=0)
+    features_tsne = tsne.fit_transform(features)
+    x_min, x_max = np.min(features_tsne, 0), np.max(features_tsne, 0)
+    features_norm = (features_tsne - x_min) / (x_max - x_min)
+    for i in range(features_norm.shape[0]):
+        plt.text(features_norm[i, 0], features_norm[i, 1], str(labels[i]),
+                 color=plt.cm.Set1(labels[i] / 10.),
+                 fontdict={'weight': 'bold', 'size': 9})
+    plt.xticks([])
+    plt.yticks([])
+    plt.title('T-SNE')
+    if save_eps:
+        plt.savefig('tsne.eps', dpi=600, format='eps')
+    plt.show()
 
+
+result_mnist_train_hidden = result_mnist_train_hidden.cpu().numpy()
+result_mnist_test_hidden = result_mnist_test_hidden.cpu().numpy()
+outlier_label = np.ones(5000, dtype=int) + 6
+np.random.seed(9527)
+np.random.shuffle(result_mnist_train_hidden)
+tsne_data = result_mnist_train_hidden[0:5000, :]
+np.random.seed(9527)
+np.random.shuffle(selected_train_dataset_label)
+np.random.shuffle(result_mnist_test_hidden)
+
+tsne_label = selected_train_dataset_label[0:5000]
+tsne_data = np.append(tsne_data, result_mnist_test_hidden[0:5000, :], axis=0)
+tsne_label = np.append(tsne_label, outlier_label)
+
+# selected_train_dataset_label = np.append(selected_train_dataset_label, outlier_label)
+# result_mnist_train_hidden = np.append(result_mnist_train_hidden, result_mnist_test_hidden)
+
+plot_tsne(tsne_data, tsne_label)
 

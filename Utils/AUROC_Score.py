@@ -67,7 +67,7 @@ def AUROC_score(train_data_last_layer, train_data_hidden, num_train_sample,
 
     # **************** outlier predict **************** #
     train_label = np.ones(num_train_sample, dtype=int)
-    test_label = np.zeros(num_test_sample, dtype=int)
+    test_label = np.zeros(num_test_sample, dtype=int)-1
     total_label = np.append(train_label, test_label)
 
     print('===> AUROC Detector Decision Score: Start')
@@ -87,3 +87,5 @@ def AUROC_score(train_data_last_layer, train_data_hidden, num_train_sample,
     print('Outlier AUROC Score:', AUROC_score)
 
     print('===> AUROC_score End')
+
+    return outlier_train_hidden, outlier_test_hidden

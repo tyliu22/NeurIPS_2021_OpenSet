@@ -10,7 +10,7 @@ import argparse
 import numpy as np
 
 from models.dla_part import DLA6
-from Utils.AUROC_Score_single import AUROC_score
+from Utils.AUROC_Score import AUROC_score
 from Utils.MyDataLoader import subDataset
 import torch.utils.data.dataloader as DataLoader
 
@@ -131,7 +131,7 @@ net = DLA6()
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
-    cudnn.benchmark = True
+    # cudnn.benchmark = True
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
@@ -142,26 +142,21 @@ if args.resume:
     start_epoch = checkpoint['epoch']
 
 
-
 # ******************************************************************* #
 #                        Model embeding
 # ******************************************************************* #
-# CIFAR10_train_data    Outlier_data
 
 # 2 Float Tensor
 CIFAR10_train_data = torch.FloatTensor(CIFAR10_train_data)
 outlier_data = torch.FloatTensor(outlier_data)
 
 with torch.no_grad():
-    result_cifar10_train_last_layer, result_cifar10_train_hidden\
-        = net(CIFAR10_train_data.to(device))
-    result_cifar10_outlier_last_layer, result_cifar10_outlier_hidden\
-        = net(outlier_data.to(device))
+    result_cifar10_train_last_layer, result_cifar10_train_hidden = net(CIFAR10_train_data.to(device))
+    result_cifar10_outlier_last_layer, result_cifar10_outlier_hidden = net(outlier_data.to(device))
 
 # ******************************************************************* #
 #                    Calculating AUROC_score
 # ******************************************************************* #
-# *********************** AUROC_score ************************* #
 num_train_sample = CIFAR10_train_data.shape[0]
 num_test_sample = outlier_data.shape[0]
 
@@ -172,10 +167,10 @@ print('===> AUROC_score start')
 #                 r_seed=0, n_estimators=1000, verbose=0,
 #                 max_samples=10000, contamination=0.01):
 
-for i in range(2,11,1):
-    AUROC_score(F.softmax(result_cifar10_train_last_layer), result_cifar10_train_hidden, num_train_sample,
-                F.softmax(result_cifar10_outlier_last_layer), result_cifar10_outlier_hidden, num_test_sample,
-                r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
+# for i in range(2,11,1):
+AUROC_score(F.softmax(result_cifar10_train_last_layer), result_cifar10_train_hidden, num_train_sample,
+            F.softmax(result_cifar10_outlier_last_layer), result_cifar10_outlier_hidden, num_test_sample,
+            r_seed=0, n_estimators=1000, verbose=0, max_samples=1.0, contamination=0.01*4)
 
 print('Algorithm End')
 

@@ -10,7 +10,7 @@ import argparse
 import numpy as np
 
 from models.dla_part import DLA6
-from Utils.AUROC_Score_single import AUROC_score
+from Utils.AUROC_Score import AUROC_score
 from Utils.MyDataLoader import subDataset
 import torch.utils.data.dataloader as DataLoader
 
@@ -176,7 +176,7 @@ print('===> AUROC_score start')
 for i in range(2,11,1):
     AUROC_score(F.softmax(result_cifar10_train_last_layer), result_cifar10_train_hidden, num_train_sample,
                 F.softmax(result_cifar10_outlier_last_layer), result_cifar10_outlier_hidden, num_test_sample,
-                r_seed=0, n_estimators=1000, verbose=0, max_samples=10000, contamination=0.01*i)
+                r_seed=0, n_estimators=1000, verbose=0, max_samples=1.0, contamination=0.01*i)
 
 print('Algorithm End')
 
